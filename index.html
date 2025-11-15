@@ -3,53 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inventory Scanner</title>
+  <title>Scanner</title>
   <style>
     :root { --primary:#0066cc; }
     body {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           margin:0; padding:0; background:#fff; color:#333;}
-    header {background:var(--primary); color:#fff; padding:1rem; text-align:center;}
-    main {padding:1rem; max-width:800px; margin:auto;}
+    main {padding:0.5rem; max-width:800px; margin:auto;}
 
-    /* Live Camera Container */
+    /* Camera + Overlay */
     #cameraContainer {
-      position: relative; width:100%; max-width:340px; margin:1rem auto;
+      position:relative; width:300px; height:300px; margin:0.5rem auto;
       border:3px solid #ccc; border-radius:8px; overflow:hidden; background:#000;
     }
-    #reader {width:100%; height:auto; display:block;}
+    #reader {width:100%; height:100%; display:block;}
     #reader video {width:100%; height:100%; object-fit:cover;}
 
-    /* Overlay Canvas (Snapshot + Red Box) */
     #overlayCanvas {
-      position: absolute; top:0; left:0; width:100%; height:100%;
-      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      pointer-events:none; opacity:0; transition:opacity .3s;
     }
-    #overlayCanvas.visible { opacity: 0.9; }
+    #overlayCanvas.visible {opacity:0.9;}
 
     .capture-btn {
-      display:block; width:100%; max-width:340px; margin:0.5rem auto;
-      background:var(--primary); color:#fff; border:none; padding:0.9rem;
-      font-size:1.1rem; border-radius:6px; cursor:pointer;
+      display:block; width:300px; margin:0.5rem auto;
+      background:var(--primary); color:#fff; border:none; padding:0.8rem;
+      font-size:1rem; border-radius:6px; cursor:pointer;
     }
 
-    .status {text-align:center; padding:1rem; background:#f0f0f0; border-radius:8px; margin:1rem 0;}
-    .btn {background:var(--primary); color:#fff; border:none; padding:0.8rem; border-radius:6px; font-size:1rem; width:100%; margin-top:0.5rem;}
-    #result {margin:1rem 0; padding:1rem; background:#e9f7ef; border-radius:6px; text-align:center; font-weight:bold;}
-    .form-row {display:flex; gap:0.5rem; margin:1rem 0; flex-wrap:wrap;}
-    .form-row input {flex:1; min-width:120px; padding:0.6rem; font-size:1rem; border:1px solid #ccc; border-radius:4px;}
+    .status {text-align:center; padding:0.8rem; background:#f0f0f0; border-radius:6px; margin:0.5rem 0;}
+    .btn {background:var(--primary); color:#fff; border:none; padding:0.7rem; border-radius:6px; font-size:0.95rem; width:100%; margin-top:0.4rem;}
+    #result {margin:0.5rem 0; padding:0.8rem; background:#e9f7ef; border-radius:6px; text-align:center; font-weight:bold;}
+    .form-row {display:flex; gap:0.4rem; margin:0.5rem 0; flex-wrap:wrap;}
+    .form-row input {flex:1; min-width:100px; padding:0.5rem; font-size:0.95rem; border:1px solid #ccc; border-radius:4px;}
     .form-row button {background:var(--primary); color:#fff;}
-    #exportBtn {margin-top:1rem; width:100%;}
-    table {width:100%; border-collapse:collapse; margin-top:1rem;}
-    th, td {border:1px solid #ddd; padding:0.6rem; text-align:left;}
+    #exportBtn {margin-top:0.5rem; width:100%;}
+    table {width:100%; border-collapse:collapse; margin-top:0.5rem; font-size:0.9rem;}
+    th, td {border:1px solid #ddd; padding:0.4rem; text-align:left;}
     th {background:#f1f1f1;}
-    .actions button {margin:0 0.2rem; font-size:0.8rem;}
+    .actions button {margin:0 0.1rem; font-size:0.75rem;}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 </head>
 <body>
-  <header><h1>Inventory Scanner</h1></header>
   <main>
-    <!-- Camera + Overlay -->
     <div id="cameraContainer" style="display:none;">
       <div id="reader"></div>
       <canvas id="overlayCanvas"></canvas>
@@ -57,15 +53,15 @@
     <button id="captureBtn" class="capture-btn" style="display:none;">Capture</button>
 
     <div class="status" id="status">
-      <p>Camera access is required to scan barcodes.</p>
-      <button id="startBtn" class="btn">Allow Camera & Start</button>
+      <p>Camera needed to scan barcodes.</p>
+      <button id="startBtn" class="btn">Allow Camera</button>
     </div>
 
     <div id="result" style="display:none;"></div>
 
     <div class="form-row">
       <input type="text" id="barcodeInput" placeholder="Barcode" readonly>
-      <input type="text" id="descInput" placeholder="Item name">
+      <input type="text" id="descInput" placeholder="Item">
       <input type="number" id="qtyInput" value="1" min="1">
       <button id="addBtn" class="btn">Add</button>
     </div>
@@ -83,159 +79,101 @@
     const db = new Dexie("InventoryDB");
     db.version(1).stores({ items: "++id,barcode,description,quantity" });
 
-    const status        = document.getElementById('status');
+    const status = document.getElementById('status');
     const cameraContainer = document.getElementById('cameraContainer');
-    const reader        = document.getElementById('reader');
+    const reader = document.getElementById('reader');
     const overlayCanvas = document.getElementById('overlayCanvas');
-    const ctx           = overlayCanvas.getContext('2d');
-    const startBtn      = document.getElementById('startBtn');
-    const captureBtn    = document.getElementById('captureBtn');
-    const result        = document.getElementById('result');
-    const barcodeInp    = document.getElementById('barcodeInput');
-    const descInp       = document.getElementById('descInput');
-    const qtyInp        = document.getElementById('qtyInput');
-    const addBtn        = document.getElementById('addBtn');
-    const table         = document.getElementById('inventoryTable');
-    const tbody         = table.querySelector('tbody');
-    const exportBtn     = document.getElementById('exportBtn');
+    const ctx = overlayCanvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const captureBtn = document.getElementById('captureBtn');
+    const result = document.getElementById('result');
+    const barcodeInp = document.getElementById('barcodeInput');
+    const descInp = document.getElementById('descInput');
+    const qtyInp = document.getElementById('qtyInput');
+    const addBtn = document.getElementById('addBtn');
+    const table = document.getElementById('inventoryTable');
+    const tbody = table.querySelector('tbody');
+    const exportBtn = document.getElementById('exportBtn');
 
-    let scannerActive = false;
-    let lastCode = null;
-    let currentVideo = null;
+    let scannerActive = false, lastCode = null, currentVideo = null;
 
-    // ---- Start Camera ----
     startBtn.onclick = () => {
       status.innerHTML = "<p>Requesting camera...</p>";
       Quagga.init({
         inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: reader,
-          constraints: { facingMode: "environment", width: {ideal: 640}, height: {ideal: 480} }
+          name: "Live", type: "LiveStream", target: reader,
+          constraints: { facingMode: "environment", width: {ideal: 640}, height: {ideal: 640} }
         },
         decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] },
         locate: true
       }, err => {
-        if (err) {
-          status.innerHTML = `<p style="color:red;">Camera error: ${err.message}</p><p>Use HTTPS.</p>`;
-          console.error(err);
-          return;
-        }
-        Quagga.start();
-        scannerActive = true;
+        if (err) { status.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`; return; }
+        Quagga.start(); scannerActive = true;
         currentVideo = reader.querySelector('video');
         cameraContainer.style.display = 'block';
         captureBtn.style.display = 'block';
         status.style.display = 'none';
-
-        // Resize canvas to match video
-        const resize = () => {
-          overlayCanvas.width = currentVideo.videoWidth;
-          overlayCanvas.height = currentVideo.videoHeight;
-        };
+        const resize = () => { overlayCanvas.width = currentVideo.videoWidth; overlayCanvas.height = currentVideo.videoHeight; };
         currentVideo.addEventListener('loadedmetadata', resize);
       });
     };
 
-    // ---- Draw Overlay (Snapshot + Red Box) ----
     function drawOverlay(codeResult) {
-      if (!currentVideo) return;
-      ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-      ctx.drawImage(currentVideo, 0, 0, overlayCanvas.width, overlayCanvas.height);
-
-      // Draw red box
+      ctx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+      ctx.drawImage(currentVideo,0,0,overlayCanvas.width,overlayCanvas.height);
       if (codeResult.boxes) {
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 4;
-        codeResult.boxes.forEach(box => {
-          ctx.beginPath();
-          ctx.moveTo(box[0][0], box[0][1]);
-          for (let i = 1; i < box.length; i++) {
-            ctx.lineTo(box[i][0], box[i][1]);
-          }
-          ctx.closePath();
-          ctx.stroke();
+        ctx.strokeStyle = 'red'; ctx.lineWidth = 3;
+        codeResult.boxes.forEach(b => {
+          ctx.beginPath(); ctx.moveTo(b[0][0],b[0][1]);
+          for (let i=1;i<b.length;i++) ctx.lineTo(b[i][0],b[i][1]);
+          ctx.closePath(); ctx.stroke();
         });
       }
-
-      // Draw barcode number
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(0, overlayCanvas.height - 40, overlayCanvas.width, 40);
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillStyle = 'white';
+      ctx.fillRect(0,overlayCanvas.height-36,overlayCanvas.width,36);
+      ctx.font = 'bold 18px sans-serif'; ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
-      ctx.fillText(codeResult.code, overlayCanvas.width / 2, overlayCanvas.height - 12);
-
+      ctx.fillText(codeResult.code, overlayCanvas.width/2, overlayCanvas.height-12);
       overlayCanvas.classList.add('visible');
     }
+    function hideOverlay(){ overlayCanvas.classList.remove('visible'); }
 
-    function hideOverlay() {
-      overlayCanvas.classList.remove('visible');
-    }
-
-    // ---- Manual Capture ----
     captureBtn.onclick = () => {
-      if (!currentVideo) return;
-      Quagga.decodeSingle({
-        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] },
-        locate: true,
-        src: currentVideo
-      }, res => {
-        if (res && res.codeResult) {
-          handleCode(res.codeResult);
-        } else {
-          alert("No barcode. Try again.");
-        }
+      Quagga.decodeSingle({decoder:{readers:["ean_reader","upc_reader","code_128_reader"]},locate:true,src:currentVideo}, r=>{
+        if(r && r.codeResult) handleCode(r.codeResult); else alert("No barcode – try again.");
       });
     };
 
-    // ---- Auto Detect ----
-    Quagga.onDetected(data => {
-      const code = data.codeResult.code;
-      if (code === lastCode) return;
-      lastCode = code;
-      setTimeout(() => lastCode = null, 2500);
-      handleCode(data.codeResult);
+    Quagga.onDetected(d => {
+      const c = d.codeResult.code;
+      if (c===lastCode) return;
+      lastCode = c; setTimeout(() => lastCode=null, 2500);
+      handleCode(d.codeResult);
     });
 
-    function handleCode(codeResult) {
-      const code = codeResult.code;
-      barcodeInp.value = code;
-      result.textContent = `Scanned: ${code}`;
+    function handleCode(cr){
+      barcodeInp.value = cr.code;
+      result.textContent = `Scanned: ${cr.code}`;
       result.style.display = 'block';
       descInp.focus();
-      drawOverlay(codeResult);
+      drawOverlay(cr);
     }
 
-    // ---- Add Item ----
     addBtn.onclick = async () => {
-      const barcode = barcodeInp.value.trim();
-      const desc = descInp.value.trim() || "—";
-      const qty = parseInt(qtyInp.value) || 1;
-      if (!barcode) return alert("Scan first!");
-
-      const existing = await db.items.where({barcode}).first();
-      if (existing) {
-        await db.items.update(existing.id, {quantity: existing.quantity + qty});
-      } else {
-        await db.items.add({barcode, description: desc, quantity: qty});
-      }
+      const b = barcodeInp.value.trim(), d = descInp.value.trim()||"—", q = +qtyInp.value||1;
+      if(!b) return alert("Scan first!");
+      const ex = await db.items.where({barcode:b}).first();
+      ex ? await db.items.update(ex.id,{quantity:ex.quantity+q})
+         : await db.items.add({barcode:b,description:d,quantity:q});
       barcodeInp.value = descInp.value = ""; qtyInp.value = 1;
-      result.style.display = 'none';
-      hideOverlay();
-      render();
+      result.style.display = 'none'; hideOverlay(); render();
     };
 
-    // ---- Render Table ----
-    async function render() {
+    async function render(){
       const items = await db.items.toArray();
-      if (items.length === 0) {
-        table.style.display = 'none';
-        exportBtn.style.display = 'none';
-        return;
-      }
+      if(!items.length){ table.style.display='none'; exportBtn.style.display='none'; return; }
       tbody.innerHTML = "";
-      items.forEach(i => {
+      items.forEach(i=>{
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${i.barcode}</td><td>${i.description}</td><td>${i.quantity}</td>
           <td class="actions">
@@ -245,30 +183,25 @@
           </td>`;
         tbody.appendChild(tr);
       });
-      table.style.display = 'table';
-      exportBtn.style.display = 'block';
+      table.style.display='table'; exportBtn.style.display='block';
     }
 
-    window.edit = async (id, d) => {
+    window.edit = async (id,delta)=>{
       const rec = await db.items.get(id);
-      const newQty = rec.quantity + d;
-      if (newQty <= 0) { if (confirm("Remove?")) await db.items.delete(id); }
-      else await db.items.update(id, {quantity: newQty});
+      const n = rec.quantity+delta;
+      n<=0 ? confirm("Remove?")&&await db.items.delete(id) : await db.items.update(id,{quantity:n});
       render();
     };
-    window.del = async (id) => {
-        if (confirm("Delete?")) { await db.items.delete(id); render(); }
-    };
+    window.del = async id=>{ if(confirm("Delete?")){await db.items.delete(id);render();}};
 
-    // ---- Export CSV ----
     exportBtn.onclick = async () => {
       const items = await db.items.toArray();
       let csv = "Barcode,Item,Quantity\n";
-      items.forEach(i => csv += `"${i.barcode}","${i.description}",${i.quantity}\n`);
-      const blob = new Blob([csv], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
+      items.forEach(i=>csv+=`" ${i.barcode}","${i.description}",${i.quantity}\n`);
       const a = document.createElement('a');
-      a.href = url; a.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+      a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+      a.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
     };
 
     render();
