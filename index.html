@@ -21,6 +21,10 @@
       background:var(--primary); color:#fff; border:none; padding:0.9rem;
       font-size:1.1rem; border-radius:6px; cursor:pointer;
     }
+    #snapshot {
+      width:100%; max-width:340px; margin:0.5rem auto; display:none;
+      border:2px solid #28a745; border-radius:6px; image-rendering:pixelated;
+    }
     .status {text-align:center; padding:1rem; background:#f0f0f0; border-radius:8px; margin:1rem 0;}
     .btn {background:var(--primary); color:#fff; border:none; padding:0.8rem; border-radius:6px; font-size:1rem; width:100%; margin-top:0.5rem;}
     #result {margin:1rem 0; padding:1rem; background:#e9f7ef; border-radius:6px; text-align:center; font-weight:bold;}
@@ -39,6 +43,9 @@
   <header><h1>Inventory Scanner</h1></header>
   <main>
     <div id="reader" style="display:none;"></div>
+    <canvas id="snapshotCanvas" style="display:none;"></canvas>
+    <img id="snapshot" alt="Scanned barcode" style="display:none;">
+
     <button id="captureBtn" class="capture-btn" style="display:none;">Capture</button>
 
     <div class="status" id="status">
@@ -68,21 +75,25 @@
     const db = new Dexie("InventoryDB");
     db.version(1).stores({ items: "++id,barcode,description,quantity" });
 
-    const status    = document.getElementById('status');
-    const reader    = document.getElementById('reader');
-    const startBtn  = document.getElementById('startBtn');
-    const captureBtn= document.getElementById('captureBtn');
-    const result    = document.getElementById('result');
-    const barcodeInp= document.getElementById('barcodeInput');
-    const descInp   = document.getElementById('descInput');
-    const qtyInp    = document.getElementById('qtyInput');
-    const addBtn    = document.getElementById('addBtn');
-    const table     = document.getElementById('inventoryTable');
-    const tbody     = table.querySelector('tbody');
-    const exportBtn = document.getElementById('exportBtn');
+    const status       = document.getElementById('status');
+    const reader       = document.getElementById('reader');
+    const video        = null; // will be set after start
+    const canvas       = document.getElementById('snapshotCanvas');
+    const snapshotImg  = document.getElementById('snapshot');
+    const startBtn     = document.getElementById('startBtn');
+    const captureBtn   = document.getElementById('captureBtn');
+    const result       = document.getElementById('result');
+    const barcodeInp   = document.getElementById('barcodeInput');
+    const descInp      = document.getElementById('descInput');
+    const qtyInp       = document.getElementById('qtyInput');
+    const addBtn       = document.getElementById('addBtn');
+    const table        = document.getElementById('inventoryTable');
+    const tbody        = table.querySelector('tbody');
+    const exportBtn    = document.getElementById('exportBtn');
 
     let scannerActive = false;
-    let manualCapture = false;
+    let lastCode = null;
+    let currentVideo = null;
 
     // ---- Start Camera ----
     startBtn.onclick = () => {
@@ -104,45 +115,77 @@
         }
         Quagga.start();
         scannerActive = true;
+        currentVideo = reader.querySelector('video');
         reader.style.display = 'block';
         captureBtn.style.display = 'block';
         status.style.display = 'none';
       });
     };
 
-    // ---- Manual Capture Button ----
+    // ---- Take Snapshot & Draw Box ----
+    function takeSnapshot(codeResult) {
+      if (!currentVideo) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = currentVideo.videoWidth;
+      canvas.height = currentVideo.videoHeight;
+      ctx.drawImage(currentVideo, 0, 0);
+
+      // Draw red box around barcode
+      if (codeResult && codeResult.boxes) {
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3;
+        codeResult.boxes.forEach(box => {
+          ctx.beginPath();
+          ctx.moveTo(box[0][0], box[0][1]);
+          for (let i = 1; i < box.length; i++) {
+            ctx.lineTo(box[i][0], box[i][1]);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        });
+      }
+
+      // Show image
+      snapshotImg.src = canvas.toDataURL('image/png');
+      snapshotImg.style.display = 'block';
+      canvas.style.display = 'none';
+    }
+
+    // ---- Manual Capture ----
     captureBtn.onclick = () => {
-      manualCapture = true;
+      if (!currentVideo) return;
       Quagga.decodeSingle({
-        src: reader.querySelector('video'),
-        numOfWorkers: 0,
-        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] }
+        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] },
+        locate: true,
+        src: currentVideo
       }, result => {
         if (result && result.codeResult) {
-          handleCode(result.codeResult.code);
+          handleCode(result.codeResult);
         } else {
-          alert("No barcode detected. Try again.");
+          alert("No barcode found. Try moving closer or tapping again.");
         }
-        manualCapture = false;
       });
     };
 
-    // ---- Auto-detect (fallback) ----
-    let lastCode = null;
+    // ---- Auto Detect + Snapshot ----
     Quagga.onDetected(data => {
-      if (manualCapture) return; // ignore auto while manual
       const code = data.codeResult.code;
       if (code === lastCode) return;
       lastCode = code;
-      setTimeout(() => lastCode = null, 2000);
-      handleCode(code);
+      setTimeout(() => lastCode = null, 2500);
+
+      handleCode(data.codeResult);
     });
 
-    function handleCode(code) {
+    function handleCode(codeResult) {
+      const code = codeResult.code;
       barcodeInp.value = code;
       result.textContent = `Scanned: ${code}`;
       result.style.display = 'block';
       descInp.focus();
+
+      // TAKE SNAPSHOT
+      takeSnapshot(codeResult);
     }
 
     // ---- Add Item ----
@@ -160,6 +203,7 @@
       }
       barcodeInp.value = descInp.value = ""; qtyInp.value = 1;
       result.style.display = 'none';
+      snapshotImg.style.display = 'none'; // hide old photo
       render();
     };
 
@@ -205,7 +249,7 @@
       const blob = new Blob([csv], {type: "text/csv"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = "inventory.csv"; a.click();
+      a.href = url; a.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`; a.click();
     };
 
     render();
