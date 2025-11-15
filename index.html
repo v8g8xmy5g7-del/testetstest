@@ -1,241 +1,170 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.2">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Scanner</title>
+  <style>
+    :root { --primary:#0066cc; }
+    body {font-family: -apple-system, sans-serif; margin:0; padding:0; background:#fff;}
+    header {background:var(--primary); color:#fff; padding:1rem; text-align:center;}
+    main {padding:1rem; max-width:800px; margin:auto;}
+    #reader {width:100%; max-width:500px; margin:1rem auto; display:block; border:2px solid #ccc; border-radius:8px; background:#000;}
+    .status {text-align:center; padding:1rem; background:#f0f0f0; border-radius:8px; margin:1rem 0;}
+    .btn {background:var(--primary); color:#fff; border:none; padding:0.8rem; border-radius:6px; font-size:1rem; width:100%; margin-top:0.5rem;}
+    #result {margin:1rem 0; padding:1rem; background:#e9f7ef; border-radius:6px; text-align:center; font-weight:bold;}
+    .form-row {display:flex; gap:0.5rem; margin:1rem 0; flex-wrap:wrap;}
+    .form-row input {flex:1; padding:0.6rem; font-size:1rem; border:1px solid #ccc; border-radius:4px;}
+    .form-row button {background:var(--primary); color:#fff;}
+    #exportBtn, #startBtn {margin-top:1rem; width:100%;}
+    table {width:100%; border-collapse:collapse; margin-top:1rem;}
+    th, td {border:1px solid #ddd; padding:0.6rem; text-align:left;}
+    th {background:#f1f1f1;}
+    .actions button {margin:0 0.2rem; font-size:0.8rem;}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Inventory Scanner&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>:root { --primary:#0066cc; --bg:#f8f9fa; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>body {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>background:#fff; margin:0; padding:0; color:#333;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>header {background:var(--primary); color:#fff; padding:1rem; text-align:center;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>main {padding:1rem; max-width:800px; margin:auto;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>#reader {width:100%; max-width:500px; margin:1rem auto; display:block; border:2px solid #ccc; border-radius:8px;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>#result {margin-top:1rem; padding:0.8rem; background:#e9ecef; border-radius:6px; font-weight:bold; text-align:center;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>table {width:100%; border-collapse:collapse; margin-top:1rem;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>th, td {border:1px solid #ddd; padding:0.6rem; text-align:left;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>th {background:#f1f1f1;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.actions button {margin-right:0.4rem; font-size:0.9rem;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.form-row {display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.form-row input, .form-row button {padding:0.5rem; font-size:1rem;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.form-row input {flex:1; min-width:150px;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.form-row button {background:var(--primary); color:#fff; border:none; border-radius:4px;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>#exportBtn {margin-top:1rem; background:var(--primary); color:#fff; border:none;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>padding:0.7rem 1.2rem; border-radius:4px; cursor:pointer; width:100%; font-size:1.1rem;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.status {text-align:center; color:#666; font-size:0.9rem; margin-top:0.5rem;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>@media (max-width:600px) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>#reader {height:320px;}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- Quagga2 for barcode scanning --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"&gt;&lt;/script&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;header&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;Inventory Scanner&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/header&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;main&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="reader"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="status" id="status"&gt;Starting camera...&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="result" style="display:none;"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-row"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;input type="text" id="barcodeInput" placeholder="Barcode (scanned)" readonly&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;input type="text" id="descInput" placeholder="Item name"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;input type="number" id="qtyInput" placeholder="Qty" min="1" value="1"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;button id="addBtn"&gt;Add to Inventory&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="exportBtn" style="display:none;"&gt;Export CSV&lt;/button&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;table id="inventoryTable" style="display:none;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;thead&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;tr&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;th&gt;Barcode&lt;/th&gt;&lt;th&gt;Item&lt;/th&gt;&lt;th&gt;Qty&lt;/th&gt;&lt;th&gt;Actions&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/tr&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/thead&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;tbody&gt;&lt;/tbody&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/table&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/main&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- IndexedDB (Dexie.js) --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Database ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const db = new Dexie("InventoryDB");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>db.version(1).stores({ items: "++id,barcode,description,quantity" });</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- UI Elements ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const statusDiv <span class="Apple-converted-space">  </span>= document.getElementById('status');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const resultDiv <span class="Apple-converted-space">  </span>= document.getElementById('result');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const barcodeInp<span class="Apple-converted-space">  </span>= document.getElementById('barcodeInput');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const descInp <span class="Apple-converted-space">    </span>= document.getElementById('descInput');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const qtyInp<span class="Apple-converted-space">      </span>= document.getElementById('qtyInput');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const addBtn<span class="Apple-converted-space">      </span>= document.getElementById('addBtn');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const table <span class="Apple-converted-space">      </span>= document.getElementById('inventoryTable');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const tbody <span class="Apple-converted-space">      </span>= table.querySelector('tbody');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const exportBtn <span class="Apple-converted-space">  </span>= document.getElementById('exportBtn');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Auto-Start Camera ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let scannerActive = false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function startScanner() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (scannerActive) return;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>Quagga.init({</p>
-<p class="p1"><span class="Apple-converted-space">        </span>inputStream: {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>name: "Live",</p>
-<p class="p1"><span class="Apple-converted-space">          </span>type: "LiveStream",</p>
-<p class="p1"><span class="Apple-converted-space">          </span>target: document.querySelector('#reader'),</p>
-<p class="p1"><span class="Apple-converted-space">          </span>constraints: {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>facingMode: "environment", // rear camera</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: {ideal: 1280},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: {ideal: 720}</p>
-<p class="p1"><span class="Apple-converted-space">          </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>},</p>
-<p class="p1"><span class="Apple-converted-space">        </span>locator: { patchSize: "medium", halfSample: true },</p>
-<p class="p1"><span class="Apple-converted-space">        </span>numOfWorkers: navigator.hardwareConcurrency || 4,</p>
-<p class="p1"><span class="Apple-converted-space">        </span>frequency: 10,</p>
-<p class="p1"><span class="Apple-converted-space">        </span>decoder: {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>readers: ["ean_reader","upc_reader","code_128_reader","qr_code_reader"]</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}, function(err) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (err) {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>statusDiv.textContent = "Camera error: " + err.message;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>console.error(err);</p>
-<p class="p1"><span class="Apple-converted-space">          </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>Quagga.start();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>scannerActive = true;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>statusDiv.textContent = "Camera active – point at barcode";</p>
-<p class="p1"><span class="Apple-converted-space">      </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Start as soon as page loads</p>
-<p class="p1"><span class="Apple-converted-space">    </span>window.addEventListener('load', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>setTimeout(startScanner, 300); // tiny delay for mobile</p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Barcode Detected ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let lastScanned = null;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>Quagga.onDetected(data =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const code = data.codeResult.code;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (code === lastScanned) return;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>lastScanned = code;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>setTimeout(() =&gt; lastScanned = null, 2000);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>barcodeInp.value = code;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>resultDiv.textContent = `Scanned: ${code}`;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>resultDiv.style.display = 'block';</p>
-<p class="p1"><span class="Apple-converted-space">      </span>descInp.focus();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>descInp.select();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Add Item ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>async function addItem() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const barcode = barcodeInp.value.trim();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const desc<span class="Apple-converted-space">    </span>= descInp.value.trim() || "—";</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const qty <span class="Apple-converted-space">    </span>= parseInt(qtyInp.value) || 1;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (!barcode) return alert("Scan a barcode first!");</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>const existing = await db.items.where({barcode}).first();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (existing) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>await db.items.update(existing.id, {quantity: existing.quantity + qty});</p>
-<p class="p1"><span class="Apple-converted-space">      </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>await db.items.add({barcode, description: desc, quantity: qty});</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>barcodeInp.value = descInp.value = ""; qtyInp.value = 1;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>resultDiv.style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">      </span>renderTable();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>addBtn.onclick = addItem;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Allow Enter key in description</p>
-<p class="p1"><span class="Apple-converted-space">    </span>descInp.addEventListener('keypress', e =&gt; { if (e.key === 'Enter') addItem(); });</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Render Table ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>async function renderTable() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const items = await db.items.orderBy('barcode').toArray();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (items.length === 0) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>table.style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">        </span>exportBtn.style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">        </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>tbody.innerHTML = "";</p>
-<p class="p1"><span class="Apple-converted-space">      </span>items.forEach(it =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const tr = document.createElement('tr');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>tr.innerHTML = `</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;td&gt;${escape(it.barcode)}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;td&gt;${escape(it.description)}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;td&gt;${it.quantity}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;td class="actions"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="edit(${it.id},-1)"&gt;−1&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="edit(${it.id},1)"&gt;+1&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="del(${it.id})" style="color:red;"&gt;Del&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;/td&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>tbody.appendChild(tr);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>});</p>
-<p class="p1"><span class="Apple-converted-space">      </span>table.style.display = 'table';</p>
-<p class="p1"><span class="Apple-converted-space">      </span>exportBtn.style.display = 'block';</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Edit / Delete ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>window.edit = async (id, delta) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const rec = await db.items.get(id);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const newQty = rec.quantity + delta;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (newQty &lt;= 0) { if (confirm("Remove?")) await db.items.delete(id); }</p>
-<p class="p1"><span class="Apple-converted-space">      </span>else await db.items.update(id, {quantity: newQty});</p>
-<p class="p1"><span class="Apple-converted-space">      </span>renderTable();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>};</p>
-<p class="p1"><span class="Apple-converted-space">    </span>window.del = async (id) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (confirm("Delete item?")) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>await db.items.delete(id);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>renderTable();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>};</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Export CSV ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>exportBtn.onclick = async () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const items = await db.items.orderBy('barcode').toArray();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>let csv = "Barcode,Item,Quantity\n";</p>
-<p class="p1"><span class="Apple-converted-space">      </span>items.forEach(i =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>csv += `"${i.barcode}","${i.description.replace(/"/g,'""')}",${i.quantity}\n`;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>});</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const blob = new Blob([csv], {type: "text/csv"});</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const url = URL.createObjectURL(blob);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const a = document.createElement('a');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>a.href = url;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>a.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>a.click();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>URL.revokeObjectURL(url);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>};</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// ---------- Helpers ----------</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function escape(str) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const div = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>div.textContent = str;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return div.innerHTML;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Initial render</p>
-<p class="p1"><span class="Apple-converted-space">    </span>renderTable();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+  <header><h1>Inventory Scanner</h1></header>
+  <main>
+    <div id="reader" style="display:none;"></div>
+    <div class="status" id="status">
+      <p>Camera access is required to scan barcodes.</p>
+      <button id="startBtn" class="btn">Allow Camera & Start Scanning</button>
+    </div>
+    <div id="result" style="display:none;"></div>
+
+    <div class="form-row">
+      <input type="text" id="barcodeInput" placeholder="Barcode" readonly>
+      <input type="text" id="descInput" placeholder="Item name">
+      <input type="number" id="qtyInput" value="1" min="1">
+      <button id="addBtn" class="btn">Add</button>
+    </div>
+
+    <button id="exportBtn" class="btn" style="display:none;">Export CSV</button>
+
+    <table id="inventoryTable" style="display:none;">
+      <thead><tr><th>Barcode</th><th>Item</th><th>Qty</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <script>
+    const db = new Dexie("InventoryDB");
+    db.version(1).stores({ items: "++id,barcode,description,quantity" });
+
+    const status = document.getElementById('status');
+    const reader = document.getElementById('reader');
+    const startBtn = document.getElementById('startBtn');
+    const result = document.getElementById('result');
+    const barcodeInp = document.getElementById('barcodeInput');
+    const descInp = document.getElementById('descInput');
+    const qtyInp = document.getElementById('qtyInput');
+    const addBtn = document.getElementById('addBtn');
+    const table = document.getElementById('inventoryTable');
+    const tbody = table.querySelector('tbody');
+    const exportBtn = document.getElementById('exportBtn');
+
+    let scannerActive = false;
+
+    startBtn.onclick = () => {
+      status.innerHTML = "<p>Requesting camera...</p>";
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: reader,
+          constraints: { facingMode: "environment" }
+        },
+        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] }
+      }, err => {
+        if (err) {
+          status.innerHTML = `<p style="color:red;">Camera error: ${err.message}</p><p>Try again or use a secure (HTTPS) connection.</p>`;
+          console.error(err);
+          return;
+        }
+        Quagga.start();
+        scannerActive = true;
+        reader.style.display = 'block';
+        status.style.display = 'none';
+      });
+    };
+
+    let lastCode = null;
+    Quagga.onDetected(data => {
+      const code = data.codeResult.code;
+      if (code === lastCode) return;
+      lastCode = code;
+      setTimeout(() => lastCode = null, 2000);
+
+      barcodeInp.value = code;
+      result.textContent = `Scanned: ${code}`;
+      result.style.display = 'block';
+      descInp.focus();
+    });
+
+    addBtn.onclick = async () => {
+      const barcode = barcodeInp.value.trim();
+      const desc = descInp.value.trim() || "—";
+      const qty = parseInt(qtyInp.value) || 1;
+      if (!barcode) return alert("Scan first!");
+
+      const existing = await db.items.where({barcode}).first();
+      if (existing) {
+        await db.items.update(existing.id, {quantity: existing.quantity + qty});
+      } else {
+        await db.items.add({barcode, description: desc, quantity: qty});
+      }
+      barcodeInp.value = descInp.value = ""; qtyInp.value = 1;
+      result.style.display = 'none';
+      render();
+    };
+
+    async function render() {
+      const items = await db.items.toArray();
+      if (items.length === 0) {
+        table.style.display = 'none';
+        exportBtn.style.display = 'none';
+        return;
+      }
+      tbody.innerHTML = "";
+      items.forEach(i => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i.barcode}</td><td>${i.description}</td><td>${i.quantity}</td>
+          <td class="actions">
+            <button onclick="edit(${i.id},-1)">-1</button>
+            <button onclick="edit(${i.id},1)">+1</button>
+            <button onclick="del(${i.id})" style="color:red;">Del</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+      table.style.display = 'table';
+      exportBtn.style.display = 'block';
+    }
+
+    window.edit = async (id, d) => {
+      const rec = await db.items.get(id);
+      const newQty = rec.quantity + d;
+      if (newQty <= 0) { if (confirm("Remove?")) await db.items.delete(id); }
+      else await db.items.update(id, {quantity: newQty});
+      render();
+    };
+    window.del = async (id) => {
+      if (confirm("Delete?")) { await db.items.delete(id); render(); }
+    };
+
+    exportBtn.onclick = async () => {
+      const items = await db.items.toArray();
+      let csv = "Barcode,Item,Quantity\n";
+      items.forEach(i => csv += `"${i.barcode}","${i.description}",${i.quantity}\n`);
+      const blob = new Blob([csv], {type: "text/csv"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = "inventory.csv"; a.click();
+    };
+
+    render();
+  </script>
 </body>
 </html>
