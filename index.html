@@ -104,14 +104,14 @@
           constraints: { facingMode: "environment", width: {ideal: 640}, height: {ideal: 640} }
         },
         decoder: {
-          readers: ["ean_reader", "upc_reader", "code_128_reader"],
-          multiple: true, // only trigger if multiple frames agree
+          readers: ["ean_reader", "upc_reader", "code_128_reader"]
         },
         locator: {
-          patchSize: "large",
-          halfSample: false
+          patchSize: "medium",
+          halfSample: true
         },
         numOfWorkers: 2,
+        frequency: 10,
         locate: true
       }, err => {
         if (err) { status.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`; return; }
@@ -126,7 +126,7 @@
     };
 
     function isValidBarcode(code) {
-      const clean = code.replace(/\D/g, ''); // keep only digits
+      const clean = code.replace(/\D/g, '');
       return clean.length >= 8 && clean.length <= 13 && /^\d+$/.test(clean);
     }
 
@@ -153,8 +153,8 @@
 
     captureBtn.onclick = () => {
       Quagga.decodeSingle({
-        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"], multiple: true },
-        locator: { patchSize: "large", halfSample: false },
+        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] },
+        locator: { patchSize: "medium", halfSample: true },
         locate: true,
         src: currentVideo
       }, r => {
@@ -169,9 +169,10 @@
     Quagga.onDetected(d => {
       const code = d.codeResult.code;
       if (!isValidBarcode(code)) return;
-      if (code.replace(/\D/g, '') === lastCode) return;
-      lastCode = code.replace(/\D/g, '');
-      setTimeout(() => lastCode = null, 3000);
+      const clean = code.replace(/\D/g, '');
+      if (clean === lastCode) return;
+      lastCode = clean;
+      setTimeout(() => lastCode = null, 2000);
       handleCode(d.codeResult);
     });
 
