@@ -6,17 +6,28 @@
   <title>Inventory Scanner</title>
   <style>
     :root { --primary:#0066cc; }
-    body {font-family: -apple-system, sans-serif; margin:0; padding:0; background:#fff;}
+    body {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          margin:0; padding:0; background:#fff; color:#333;}
     header {background:var(--primary); color:#fff; padding:1rem; text-align:center;}
     main {padding:1rem; max-width:800px; margin:auto;}
-    #reader {width:100%; max-width:500px; margin:1rem auto; display:block; border:2px solid #ccc; border-radius:8px; background:#000;}
+    #reader {
+      width:100%; max-width:340px; height:auto; aspect-ratio:4/3;
+      margin:1rem auto; display:block; border:3px solid #ccc;
+      border-radius:8px; background:#000; overflow:hidden;
+    }
+    #reader video {width:100%; height:100%; object-fit:cover;}
+    .capture-btn {
+      display:block; width:100%; max-width:340px; margin:0.5rem auto;
+      background:var(--primary); color:#fff; border:none; padding:0.9rem;
+      font-size:1.1rem; border-radius:6px; cursor:pointer;
+    }
     .status {text-align:center; padding:1rem; background:#f0f0f0; border-radius:8px; margin:1rem 0;}
     .btn {background:var(--primary); color:#fff; border:none; padding:0.8rem; border-radius:6px; font-size:1rem; width:100%; margin-top:0.5rem;}
     #result {margin:1rem 0; padding:1rem; background:#e9f7ef; border-radius:6px; text-align:center; font-weight:bold;}
     .form-row {display:flex; gap:0.5rem; margin:1rem 0; flex-wrap:wrap;}
-    .form-row input {flex:1; padding:0.6rem; font-size:1rem; border:1px solid #ccc; border-radius:4px;}
+    .form-row input {flex:1; min-width:120px; padding:0.6rem; font-size:1rem; border:1px solid #ccc; border-radius:4px;}
     .form-row button {background:var(--primary); color:#fff;}
-    #exportBtn, #startBtn {margin-top:1rem; width:100%;}
+    #exportBtn {margin-top:1rem; width:100%;}
     table {width:100%; border-collapse:collapse; margin-top:1rem;}
     th, td {border:1px solid #ddd; padding:0.6rem; text-align:left;}
     th {background:#f1f1f1;}
@@ -28,10 +39,13 @@
   <header><h1>Inventory Scanner</h1></header>
   <main>
     <div id="reader" style="display:none;"></div>
+    <button id="captureBtn" class="capture-btn" style="display:none;">Capture</button>
+
     <div class="status" id="status">
       <p>Camera access is required to scan barcodes.</p>
-      <button id="startBtn" class="btn">Allow Camera & Start Scanning</button>
+      <button id="startBtn" class="btn">Allow Camera & Start</button>
     </div>
+
     <div id="result" style="display:none;"></div>
 
     <div class="form-row">
@@ -54,20 +68,23 @@
     const db = new Dexie("InventoryDB");
     db.version(1).stores({ items: "++id,barcode,description,quantity" });
 
-    const status = document.getElementById('status');
-    const reader = document.getElementById('reader');
-    const startBtn = document.getElementById('startBtn');
-    const result = document.getElementById('result');
-    const barcodeInp = document.getElementById('barcodeInput');
-    const descInp = document.getElementById('descInput');
-    const qtyInp = document.getElementById('qtyInput');
-    const addBtn = document.getElementById('addBtn');
-    const table = document.getElementById('inventoryTable');
-    const tbody = table.querySelector('tbody');
+    const status    = document.getElementById('status');
+    const reader    = document.getElementById('reader');
+    const startBtn  = document.getElementById('startBtn');
+    const captureBtn= document.getElementById('captureBtn');
+    const result    = document.getElementById('result');
+    const barcodeInp= document.getElementById('barcodeInput');
+    const descInp   = document.getElementById('descInput');
+    const qtyInp    = document.getElementById('qtyInput');
+    const addBtn    = document.getElementById('addBtn');
+    const table     = document.getElementById('inventoryTable');
+    const tbody     = table.querySelector('tbody');
     const exportBtn = document.getElementById('exportBtn');
 
     let scannerActive = false;
+    let manualCapture = false;
 
+    // ---- Start Camera ----
     startBtn.onclick = () => {
       status.innerHTML = "<p>Requesting camera...</p>";
       Quagga.init({
@@ -75,35 +92,60 @@
           name: "Live",
           type: "LiveStream",
           target: reader,
-          constraints: { facingMode: "environment" }
+          constraints: { facingMode: "environment", width: {ideal: 640}, height: {ideal: 480} }
         },
-        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] }
+        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] },
+        locate: true
       }, err => {
         if (err) {
-          status.innerHTML = `<p style="color:red;">Camera error: ${err.message}</p><p>Try again or use a secure (HTTPS) connection.</p>`;
+          status.innerHTML = `<p style="color:red;">Camera error: ${err.message}</p><p>Use HTTPS.</p>`;
           console.error(err);
           return;
         }
         Quagga.start();
         scannerActive = true;
         reader.style.display = 'block';
+        captureBtn.style.display = 'block';
         status.style.display = 'none';
       });
     };
 
+    // ---- Manual Capture Button ----
+    captureBtn.onclick = () => {
+      manualCapture = true;
+      Quagga.decodeSingle({
+        src: reader.querySelector('video'),
+        numOfWorkers: 0,
+        decoder: { readers: ["ean_reader","upc_reader","code_128_reader"] }
+      }, result => {
+        if (result && result.codeResult) {
+          handleCode(result.codeResult.code);
+        } else {
+          alert("No barcode detected. Try again.");
+        }
+        manualCapture = false;
+      });
+    };
+
+    // ---- Auto-detect (fallback) ----
     let lastCode = null;
     Quagga.onDetected(data => {
+      if (manualCapture) return; // ignore auto while manual
       const code = data.codeResult.code;
       if (code === lastCode) return;
       lastCode = code;
       setTimeout(() => lastCode = null, 2000);
+      handleCode(code);
+    });
 
+    function handleCode(code) {
       barcodeInp.value = code;
       result.textContent = `Scanned: ${code}`;
       result.style.display = 'block';
       descInp.focus();
-    });
+    }
 
+    // ---- Add Item ----
     addBtn.onclick = async () => {
       const barcode = barcodeInp.value.trim();
       const desc = descInp.value.trim() || "—";
@@ -121,6 +163,7 @@
       render();
     };
 
+    // ---- Render Table ----
     async function render() {
       const items = await db.items.toArray();
       if (items.length === 0) {
@@ -154,6 +197,7 @@
       if (confirm("Delete?")) { await db.items.delete(id); render(); }
     };
 
+    // ---- Export CSV ----
     exportBtn.onclick = async () => {
       const items = await db.items.toArray();
       let csv = "Barcode,Item,Quantity\n";
